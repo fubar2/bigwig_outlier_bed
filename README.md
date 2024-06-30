@@ -13,6 +13,11 @@ In the spirit of DeepTools, but finding contiguous regions where the bigwig valu
 
 ![image](https://github.com/fubar2/bigwig_peak_bed/assets/6016266/59d1564b-0c34-42a3-b437-44332cf1b2f0)
 
+Big differences between chromosomes 14,15,21,22 and Y in this "all contigs" view - explanations welcomed:
+
+![image](https://github.com/fubar2/bigwig_peak_bed/assets/6016266/162bf681-2977-4eb8-8d6f-9dad5b3931f8)
+
+
 [pybedtools](https://github.com/jackh726/bigtools) is used for the bigwig interface. Optionally allow
 multiple bigwigs to be processed into a single bed - the bed features have the bigwig name in the label for viewing.
 
