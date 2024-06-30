@@ -1,34 +1,51 @@
+<tool name="bigwigtobed" id="bigwigtobed" version="0.01" profile="22.05">
+  <!--Source in git at: https://github.com/fubar2/galaxy_tf_overlay-->
+  <!--Created by toolfactory@galaxy.org at 30/06/2024 19:44:14 using the Galaxy Tool Factory.-->
+  <description>Writes high and low bigwig regions as features in a bed file</description>
+  <requirements>
+    <requirement type="package">python</requirement>
+    <requirement type="package">numpy</requirement>
+    <requirement type="package">pybigtools</requirement>
+  </requirements>
+  <version_command><![CDATA[echo "0.01"]]></version_command>
+  <command><![CDATA[python
+'$runme'
+--bigwig
+'$bigwig'
+--bedouthilo
+'$bedouthilo'
+--minwin
+'$minwin'
+--qhi
+'$qhi'
+--qlo
+'$qlo'
+#if $tableout == "set"
+ --tableout
+#end if
+--bigwiglabels
+'$bigwiglabels']]></command>
+  <configfiles>
+    <configfile name="runme"><![CDATA[#raw
 """
 Ross Lazarus June 2024 for VGP 
-
 Bigwigs are great, but hard to reliably "see" small low coverage or small very high coverage regions.
 Colouring in JB2 tracks will need a new plugin, so this code will find bigwig regions above and below a chosen percentile point.
 0.99 and 0.01 work well in testing with a minimum span of 10 bp.
-
 Multiple bigwigs **with the same reference** can be combined - bed segments will be named appropriately
 Combining multiple references works but is silly because only display will rely on one reference so others will not be shown...
-
 Tricksy numpy method from http://gregoryzynda.com/python/numpy/contiguous/interval/2019/11/29/contiguous-regions.html
 takes about 95 seconds for a 17MB test wiggle
-
 JBrowse2 bed normally displays ignore the score, so could provide separate low/high bed file outputs as an option.
-
 Update june 30 2024: wrote a 'no-build' plugin for beds to display red/blue if >0/<0 so those are used for scores
 Bed interval naming must be short for JB2 but needs input bigwig name and (lo or hi).
-
 """
-
-
 import argparse
 import numpy as np
 import pybigtools
 import sys
-
-
 from pathlib import Path
-
 class findOut():
-
     def __init__(self, args):
         self.bwnames=args.bigwig
         self.bwlabels=args.bigwiglabels
@@ -43,7 +60,6 @@ class findOut():
         self.qhi = args.qhi
         self.qlo = args.qlo
         self.makeBed()
-
     def processVals(self, bw, isTop):
         # http://gregoryzynda.com/python/numpy/contiguous/interval/2019/11/29/contiguous-regions.html
         if isTop:
@@ -54,7 +70,6 @@ class findOut():
         bwexdnz = bwexd.nonzero()[0]
         bwregions = np.reshape(bwexdnz, (-1,2))
         return bwregions
-
     def writeBed(self, bed, bedfname):
         """
         potentially multiple
@@ -65,7 +80,6 @@ class findOut():
             bedf.write('\n'.join(beds))
             bedf.write('\n')
         print('Wrote %d bed regions to %s' % (len(bed), bedfname))
-        
     def makeBed(self):
         bedhi = []
         bedlo = []
@@ -117,8 +131,6 @@ class findOut():
             allbed = bedlo + bedhi
             self.writeBed(allbed, self.bedouthilo)
         return restab
-    
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     a = parser.add_argument
@@ -144,5 +156,42 @@ if __name__ == "__main__":
         with open(args.tableout, 'w') as tout:
             tout.write('\n'.join(restab))
             tout.write('\n')
-    
+#end raw]]></configfile>
+  </configfiles>
+  <inputs>
+    <param name="bigwig" type="data" optional="false" label="Bigwig file(s) to process. " help="If more than one, MUST all use the same reference sequence to be displayable. Feature names will include the bigwig label." format="bigwig" multiple="true"/>
+    <param name="minwin" type="integer" value="10" label="Minimum continuous bases to count as a high or low bed feature" help="Actual run length will be found and used for continuous features as long or longer."/>
+    <param name="qhi" type="float" value="0.99" label="Quantile cutoff for a high region - 0.99 will cut off at or above the 99th percentile" help=""/>
+    <param name="qlo" type="float" value="0.01" label="Quantile cutoff for a low region - 0.01 will cut off at or below the 1st percentile." help=""/>
+    <param name="tableout" type="select" label="Write a table showing contig statistics for each bigwig" help="" display="radio">
+      <option value="notset">Do not set this flag</option>
+      <option value="set">Set this flag</option>
+    </param>
+    <param name="bigwiglabels" type="text" value="outbed" label="Label to use in bed feature names to indicate source bigwig contents - such as coverage" help=""/>
+  </inputs>
+  <outputs>
+    <data name="bedouthilo" format="bed" label="Both high and low contiguous regions as long or longer than window length into one bed " hidden="false"/>
+  </outputs>
+  <tests>
+    <test>
+      <output name="bedouthilo" value="bedouthilo_sample" compare="diff" lines_diff="0"/>
+      <param name="bigwig" value="bigwig_sample"/>
+      <param name="minwin" value="10"/>
+      <param name="qhi" value="0.99"/>
+      <param name="qlo" value="0.01"/>
+      <param name="tableout" value="notset"/>
+      <param name="bigwiglabels" value="outbed"/>
+    </test>
+  </tests>
+  <help><![CDATA[
+ **What it Does**
+ 
+ Takes one or more bigwigs mapped to the same reference and finds all the minimum window sized or greater contiguous regions above or below an upper and lower quantile cutoff.
+ A window size of 10 works well, and quantiles set at 0.01 and 0.99 will generally work well.
+ 
+  ]]></help>
+  <citations>
+    <citation type="doi">10.1093/bioinformatics/bts573</citation>
+  </citations>
+</tool>
 
