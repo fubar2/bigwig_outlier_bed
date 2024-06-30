@@ -1,4 +1,9 @@
-## Find and mark BigWig peaks to a bed file for display
+## bigwig peak bed maker
+
+July 30 2024 for the VGP
+
+
+### Find and mark BigWig peaks to a bed file for display
 
 In the spirit of DeepTools, but finding contiguous regions where the bigwig value is either above or below a given centile.
 0.99 and 0.01 for example. [pybedtools](https://github.com/jackh726/bigtools) is used for the bigwig interface.

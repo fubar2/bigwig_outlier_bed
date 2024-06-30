@@ -1,11 +1,9 @@
-import argparse
-import numpy as np
-import pybigtools
-import sys
-
-
 """
-find bigwig regions above and below a chosen percentile point.
+Ross Lazarus June 2024 for VGP 
+
+Bigwigs are great, but hard to reliably "see" small low coverage or small very high coverage regions.
+Colouring is not feasible without a new plugin, so this code will find bigwig regions above and below a chosen percentile point.
+
 Multiple bigwigs **with the same reference** can be combined - bed segments will be named appropriately
 Combining multiple references works but is silly because only display will rely on one reference so others will not be shown...
 
@@ -19,6 +17,12 @@ Update june 30 2024: wrote a 'no-build' plugin for beds to display red/blue if >
 Bed interval naming must be short for JB2 but needs input bigwig name and (lo or hi).
 
 """
+
+
+import argparse
+import numpy as np
+import pybigtools
+import sys
 
 class findOut():
 
