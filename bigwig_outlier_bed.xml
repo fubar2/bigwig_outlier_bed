@@ -1,7 +1,5 @@
 <tool name="bigwig_outlier_bed" id="bigwig_outlier_bed" version="0.04" profile="22.05">
-  <!--Source in git at: https://github.com/fubar2/galaxy_tf_overlay-->
-  <!--Created by toolfactory@galaxy.org at 30/06/2024 19:44:14 using the Galaxy Tool Factory.-->
-  <description>Writes high and low bigwig regions as features in a bed file</description>
+  <description>Consistent high/low quantile bigwig regions as bed features</description>
   <edam_topics>
       <edam_topic>topic_0157</edam_topic>
       <edam_topic>topic_0092</edam_topic>
@@ -17,23 +15,9 @@
   <version_command><![CDATA[python -c "import pybigtools; from importlib.metadata import version; print(version('pybigtools'))"]]></version_command>
   <command><![CDATA[python
 '$runme'
---bigwig
-'$bigwig'
---bedouthilo
-'$bedouthilo'
---minwin
-'$minwin'
---qhi
-'$qhi'
---qlo
-'$qlo'
-#if $tableout == "set"
- --tableout
-#end if
---bigwiglabels
-'$bigwiglabels']]></command>
+]]></command>
   <configfiles>
-    <configfile name="runme"><![CDATA[#raw
+    <configfile name="runme"><![CDATA[
 """
 Bigwigs are great, but hard to reliably "see" small low coverage or small very high coverage regions.
 Colouring in JB2 tracks will need a new plugin, so this code will find bigwig regions above and below a chosen percentile point.
@@ -86,14 +70,14 @@ class findOut():
     def makeBed(self):
         bedhi = []
         bedlo = []
-        bwlabels = $bigwiglabels.split(',')
-        bwnames = $bigwigs
+        bwlabels = ["$bigwiglabels",]
+        bwnames = ["$bigwigs",]
         print('bwnames=', bwnames, "bwlabs=", bwlabels)
         for i, bwname in enumerate(bwnames):
             bwlabel = bwlabels[i].replace(" ",'')
-            #p = Path('in.bw')
-            #p.symlink_to( bwname ) # required by pybigtools (!)
-            bwf = pybigtools.open(bwname)  # 'in.bw'
+            p = Path('in.bw')
+            p.symlink_to(bwname) # required by pybigtools (!)
+            bwf = pybigtools.open('in.bw')
             chrlist = bwf.chroms()
             chrs = list(chrlist.keys())
             chrs.sort()
@@ -105,13 +89,13 @@ class findOut():
                     self.bwtop = np.quantile(bw, $qhi)
                     bwhi = self.processVals(bw, isTop=True)
                     for i, seg in enumerate(bwhi):
-                        if seg[1] - seg[0] >= self.bedwin:
+                        if seg[1] - seg[0] >= $minwin:
                             bedhi.append((chr, seg[0], seg[1], '%s_hi' % (bwlabel), 1))
                 if $qlo is not None:
                     self.bwbot = np.quantile(bw,$qlo)
                     bwlo = self.processVals(bw, isTop=False)            
                     for i, seg in enumerate(bwlo):
-                        if seg[1] - seg[0] >= $bedwin:
+                        if seg[1] - seg[0] >= $minwin:
                             bedlo.append((chr, seg[0], seg[1], '%s_lo' % (bwlabel), -1))
                 bwmean = np.mean(bw)
                 bwstd = np.std(bw)
@@ -120,47 +104,47 @@ class findOut():
                 bwmin = np.min(bw)
                 restab.append('%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f' % (chr,nrow,bwmean,bwstd,bwmin,bwmax,self.bwtop,self.bwbot))        
         print('\n'.join(restab), '\n')
-        if $tableout:
-            with open($tableoutfile) as t:
+        if "$tableout" == "create":
+            with open("$tableoutfile") as t:
                 t.write('\n'.join(restab))
                 t.write('\n')
-        if $bedoutlo:
+        if "$outlo" == "true":
             if $qlo:
-                self.writeBed(bedlo, $bedoutlo)
-        if $bedouthi:
+                self.writeBed(bedlo, "$bedoutlo")
+        if "$outhi" == "true":
             if $qhi:
-                self.writeBed(bedhi, $bedouthi)
-        if $bedouthilo:
+                self.writeBed(bedhi, "$bedouthi")
+        if "$outhilo" == "true":
             allbed = bedlo + bedhi
-            self.writeBed(allbed, $bedouthilo)
+            self.writeBed(allbed, "$bedouthilo")
         return restab
 
 
 if __name__ == "__main__":
-    if not ($bedouthilo or $bedouthi or $bedoutlo):
-        sys.stderr.write("bigwig_outlier_bed.py cannot usefully run - need a bed output choice - must be one of low only, high only or both combined")
+    if not ("$outhilo" == "true" or "$outhi" == "true" or "$outlo" == "true"):
+        sys.stderr.write("bigwig_outlier_bed.py cannot usefully run - need a bed output choice - must be one of low only, high only or both")
         sys.exit(2)
     if not ($qlo or $qhi):
         sys.stderr.write("bigwig_outlier_bed.py cannot usefully run - need one or both of quantile cutpoints qhi and qlo")
         sys.exit(2)
-    restab = findOut(args)
-    if $tableout == "set":
-        with open($tableoutfile, 'w') as tout:
+    restab = findOut()
+    if "$tableout" == "set":
+        with open("$tableoutfile", 'w') as tout:
             tout.write('\n'.join(restab))
             tout.write('\n')
-#end raw]]></configfile>
+]]></configfile>
   </configfiles>
   <inputs>
-    <param name="bigwigs" type="data" optional="false" label="Bigwig file(s) to process. " help="If more than one, MUST all use the same reference sequence to be displayable. Feature names will include the bigwig label." format="bigwig" multiple="true"/>
+    <param name="bigwigs" type="data" optional="false" label="Bigwig file(s) to process" help="If more than one, MUST all use the same reference sequence to be displayable. Feature names will include the bigwig label." format="bigwig" multiple="true"/>
     <param name="minwin" type="integer" value="10" label="Minimum continuous bases to count as a high or low bed feature" help="Actual run length will be found and used for continuous features as long or longer."/>
-    <param name="qhi" type="float" value="0.99" label="Quantile cutoff for a high region - 0.99 will cut off at or above the 99th percentile" help=""/>
-    <param name="qlo" type="float" value="0.01" label="Quantile cutoff for a low region - 0.01 will cut off at or below the 1st percentile." help=""/>
-    <param name="outhilo" type="boolean" truevalue="true" falsevalue="false" label="Output both high and low regions to a separate bed file" help="At least one up to 3 outputs. This one is best for JBrowse2"/>
-    <param name="outhi" type="boolean" truevalue="true" falsevalue="false" label="Output only high regions to a separate bed file" help="This is good if you only care about high regions"/>
-    <param name="outlo" type="boolean" truevalue="true" falsevalue="false" label="Output only low regions to a separate bed file" help="This is good if you only care about low regions"/>
-    <param name="tableout" type="select" label="Write a table showing contig statistics for each bigwig input" help="" display="radio">
-      <option value="notset">Do not set this flag</option>
-      <option value="set">Set this flag</option>
+    <param name="qhi" type="float" value="0.99" label="Quantile cutoff for a high region - 0.99 will cut off at or above the 99th percentile" help="" optional="true"/>
+    <param name="qlo" type="float" value="0.01" label="Quantile cutoff for a low region - 0.01 will cut off at or below the 1st percentile." help="" optional="true"/>
+    <param name="outhilo" type="boolean" truevalue="true" falsevalue="false"  checked="true" label="Output both high and low regions to a bed file" help="At least one up to 3 outputs. This one is best for JBrowse2"/>
+    <param name="outhi" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Output only high regions to a bed file" help="Choose if you only care about high regions"/>
+    <param name="outlo" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Output only low regions to a bed file" help="Choose if you only care about low regions"/>
+    <param name="tableout" type="select" label="Write a table showing contig statistics for each bigwig input" help="">
+      <option value="donotmake">Do not create this report</option>
+      <option value="create" selected="true">Create this report</option>
     </param>
     <param name="bigwiglabels" type="text" value="outbed" label="Label(s) in bed features for each input bigwig - such as *coverage*. Commas must separate multiple labels" help=""/>
   </inputs>
@@ -175,17 +159,18 @@ if __name__ == "__main__":
       <filter>outlo == "true"</filter>
     </data>
     <data name="tableoutfile" format="tabular" label="Contig statistics" hidden="false">
-      <filter>options['tableout'] == 'set'</filter>
+      <filter>options['tableout'] == "set"</filter>
     </data>
   </outputs>
   <tests>
-    <test>
+    <test expect_num_outputs="1">
       <output name="bedouthilo" value="bedouthilo_sample" compare="diff" lines_diff="0"/>
-      <param name="bigwig" value="bigwig_sample"/>
+      <param name="outhilo" value="true"/>
+      <param name="bigwigs" value="bigwig_sample"/>
       <param name="minwin" value="10"/>
       <param name="qhi" value="0.99"/>
       <param name="qlo" value="0.01"/>
-      <param name="tableout" value="notset"/>
+      <param name="tableout" value="donotmake"/>
       <param name="bigwiglabels" value="outbed"/>
     </test>
   </tests>
