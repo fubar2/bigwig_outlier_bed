@@ -3,9 +3,9 @@
   <!--Created by toolfactory@galaxy.org at 30/06/2024 19:44:14 using the Galaxy Tool Factory.-->
   <description>Writes high and low bigwig regions as features in a bed file</description>
   <requirements>
-    <requirement type="package">python</requirement>
-    <requirement type="package">numpy</requirement>
-    <requirement type="package">pybigtools</requirement>
+    <requirement type="package" version="3.12.3">python</requirement>
+    <requirement type="package" version="2.0.0">numpy</requirement>
+    <requirement type="package" version="0.1.4">pybigtools</requirement>
   </requirements>
   <version_command><![CDATA[echo "0.01"]]></version_command>
   <command><![CDATA[python
@@ -159,7 +159,7 @@ if __name__ == "__main__":
 #end raw]]></configfile>
   </configfiles>
   <inputs>
-    <param name="bigwigs" type="data" optional="false" label="Bigwig file(s) to process" help="If more than one, MUST all use the same reference sequence to be displayable. Feature names will include the bigwig label." format="bigwig" multiple="true"/>
+    <param name="bigwig" type="data" optional="false" label="Bigwig file(s) to process" help="If more than one, MUST all use the same reference sequence to be displayable. Feature names will include the bigwig label." format="bigwig" multiple="true"/>
     <param name="minwin" type="integer" value="10" label="Minimum continuous bases to count as a high or low bed feature" help="Actual run length will be found and used for continuous features as long or longer."/>
     <param name="qhi" type="float" value="0.99" label="Quantile cutoff for a high region - 0.99 will cut off at or above the 99th percentile" help="" optional="true"/>
     <param name="qlo" type="float" value="0.01" label="Quantile cutoff for a low region - 0.01 will cut off at or below the 1st percentile." help="" optional="true"/>
@@ -174,23 +174,23 @@ if __name__ == "__main__":
   </inputs>
   <outputs>
     <data name="bedouthilo" format="bed" label="High_and_low_bed" hidden="false">
-      <filter>outhilo == "true"</filter>
+      <filter>outhilo</filter>
     </data>
     <data name="bedouthi" format="bed" label="High bed" hidden="false">
-      <filter>outhi == "true"</filter>
+      <filter>outhi</filter>
     </data>
     <data name="bedoutlo" format="bed" label="Low bed" hidden="false">
-      <filter>outlo == "true"</filter>
+      <filter>outlo</filter>
     </data>
     <data name="tableoutfile" format="tabular" label="Contig statistics" hidden="false">
       <filter>options['tableout'] == "create"</filter>
     </data>
   </outputs>
   <tests>
-    <test expect_num_outputs="1">
+    <test expect_num_outputs="2">
       <output name="bedouthilo" value="bedouthilo_sample" compare="diff" lines_diff="0"/>
       <param name="outhilo" value="true"/>
-      <param name="bigwigs" value="bigwig_sample"/>
+      <param name="bigwig" value="bigwig_sample"/>
       <param name="minwin" value="10"/>
       <param name="qhi" value="0.99"/>
       <param name="qlo" value="0.01"/>
@@ -203,6 +203,12 @@ if __name__ == "__main__":
  
  Takes one or more bigwigs mapped to the same reference and finds all the minimum window sized or greater contiguous regions above or below an upper and lower quantile cutoff.
  A window size of 10 works well, and quantiles set at 0.01 and 0.99 will generally work well.
+
+ For JBrowse2 bed tracks, putting both the extreme regions in one bed file is usually best since they can now appear coloured red/blue.
+
+ If you only need to see either the consistently high or low regions, use one of those as the output.
+
+ At least one bed output must be selected or the tool will fail.
  
   ]]></help>
   <citations>
