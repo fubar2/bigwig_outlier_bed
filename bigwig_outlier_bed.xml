@@ -1,4 +1,4 @@
-<tool name="bigwigtobed" id="bigwigtobed" version="0.01" profile="22.05">
+<tool name="bigwig_outlier_bed" id="bigwig_outlier_bed" version="0.01" profile="22.05">
   <!--Source in git at: https://github.com/fubar2/galaxy_tf_overlay-->
   <!--Created by toolfactory@galaxy.org at 30/06/2024 19:44:14 using the Galaxy Tool Factory.-->
   <description>Writes high and low bigwig regions as features in a bed file</description>
@@ -20,8 +20,8 @@
 '$qhi'
 --qlo
 '$qlo'
-#if $tableout == "set"
- --tableout
+#if $tableout == "create":
+ --tableout '$tableoutfile'
 #end if
 --bigwiglabels
 '$bigwiglabels']]></command>
@@ -152,34 +152,49 @@ if __name__ == "__main__":
         sys.stderr.write("bigwig_outlier_bed.py cannot usefully run - need one or both of quantile cutpoints qhi and qlo")
         sys.exit(2)
     restab = findOut(args)
-    if args.tableout:
-        with open(args.tableout, 'w') as tout:
+    if args.tableout == "create":
+        with open(args.tableoutfile, 'w') as tout:
             tout.write('\n'.join(restab))
             tout.write('\n')
 #end raw]]></configfile>
   </configfiles>
   <inputs>
-    <param name="bigwig" type="data" optional="false" label="Bigwig file(s) to process. " help="If more than one, MUST all use the same reference sequence to be displayable. Feature names will include the bigwig label." format="bigwig" multiple="true"/>
+    <param name="bigwigs" type="data" optional="false" label="Bigwig file(s) to process" help="If more than one, MUST all use the same reference sequence to be displayable. Feature names will include the bigwig label." format="bigwig" multiple="true"/>
     <param name="minwin" type="integer" value="10" label="Minimum continuous bases to count as a high or low bed feature" help="Actual run length will be found and used for continuous features as long or longer."/>
-    <param name="qhi" type="float" value="0.99" label="Quantile cutoff for a high region - 0.99 will cut off at or above the 99th percentile" help=""/>
-    <param name="qlo" type="float" value="0.01" label="Quantile cutoff for a low region - 0.01 will cut off at or below the 1st percentile." help=""/>
-    <param name="tableout" type="select" label="Write a table showing contig statistics for each bigwig" help="" display="radio">
-      <option value="notset">Do not set this flag</option>
-      <option value="set">Set this flag</option>
+    <param name="qhi" type="float" value="0.99" label="Quantile cutoff for a high region - 0.99 will cut off at or above the 99th percentile" help="" optional="true"/>
+    <param name="qlo" type="float" value="0.01" label="Quantile cutoff for a low region - 0.01 will cut off at or below the 1st percentile." help="" optional="true"/>
+    <param name="outhilo" type="boolean" truevalue="true" falsevalue="false"  checked="true" label="Output both high and low regions to a bed file" help="At least one up to 3 outputs. This one is best for JBrowse2"/>
+    <param name="outhi" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Output only high regions to a bed file" help="Choose if you only care about high regions"/>
+    <param name="outlo" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Output only low regions to a bed file" help="Choose if you only care about low regions"/>
+    <param name="tableout" type="select" label="Write a table showing contig statistics for each bigwig input" help="">
+      <option value="donotmake">Do not create this report</option>
+      <option value="create" selected="true">Create this report</option>
     </param>
-    <param name="bigwiglabels" type="text" value="outbed" label="Label to use in bed feature names to indicate source bigwig contents - such as coverage" help=""/>
+    <param name="bigwiglabels" type="text" value="outbed" label="Label(s) in bed features for each input bigwig - such as *coverage*. Commas must separate multiple labels" help=""/>
   </inputs>
   <outputs>
-    <data name="bedouthilo" format="bed" label="Both high and low contiguous regions as long or longer than window length into one bed " hidden="false"/>
+    <data name="bedouthilo" format="bed" label="High_and_low_bed" hidden="false">
+      <filter>outhilo == "true"</filter>
+    </data>
+    <data name="bedouthi" format="bed" label="High bed" hidden="false">
+      <filter>outhi == "true"</filter>
+    </data>
+    <data name="bedoutlo" format="bed" label="Low bed" hidden="false">
+      <filter>outlo == "true"</filter>
+    </data>
+    <data name="tableoutfile" format="tabular" label="Contig statistics" hidden="false">
+      <filter>options['tableout'] == "create"</filter>
+    </data>
   </outputs>
   <tests>
-    <test>
+    <test expect_num_outputs="1">
       <output name="bedouthilo" value="bedouthilo_sample" compare="diff" lines_diff="0"/>
-      <param name="bigwig" value="bigwig_sample"/>
+      <param name="outhilo" value="true"/>
+      <param name="bigwigs" value="bigwig_sample"/>
       <param name="minwin" value="10"/>
       <param name="qhi" value="0.99"/>
       <param name="qlo" value="0.01"/>
-      <param name="tableout" value="notset"/>
+      <param name="tableout" value="donotmake"/>
       <param name="bigwiglabels" value="outbed"/>
     </test>
   </tests>
