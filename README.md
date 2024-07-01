@@ -1,10 +1,10 @@
-## bigwig peak bed maker
+## bigwig peak outlier to bed
 
 ### July 30 2024 for the VGP
 
 This code will soon become a Galaxy tool, for building some of the [NIH MARBL T2T assembly polishing](https://github.com/marbl/training) tools as Galaxy workflows.
 
-JBrowse2 2.12.3 update will include a plugin for optional colours to distinguish bed features, shown being tested in the screenshots below.
+The next JBrowse2 tool release will include a plugin for optional colours to distinguish bed features, shown being tested in the screenshots below.
 
 ### Find and mark BigWig peaks to a bed file for display
 
