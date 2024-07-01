@@ -1,7 +1,5 @@
 <tool name="bigwig_outlier_bed" id="bigwig_outlier_bed" version="0.01" profile="22.05">
-  <!--Source in git at: https://github.com/fubar2/galaxy_tf_overlay-->
-  <!--Created by toolfactory@galaxy.org at 30/06/2024 19:44:14 using the Galaxy Tool Factory.-->
-  <description>Writes high and low bigwig regions as features in a bed file</description>
+  <description>Writes high and low bigwig runs as features in a bed file</description>
   <requirements>
     <requirement type="package" version="3.12.3">python</requirement>
     <requirement type="package" version="2.0.0">numpy</requirement>
@@ -12,8 +10,15 @@
 '$runme'
 --bigwig
 '$bigwig'
---bedouthilo
-'$bedouthilo'
+#if $outhilo:
+    --bedouthilo '$bedouthilo'
+#end if
+#if $outhi:
+    --bedouthi '$bedouthi'
+#end if
+#if $outlo:
+    --bedoutlo '$bedoutlo'
+#end if
 --minwin
 '$minwin'
 --qhi
@@ -21,10 +26,10 @@
 --qlo
 '$qlo'
 #if $tableout == "create":
- --tableout '$tableoutfile'
+ --tableoutfile '$tableoutfile'
 #end if
---bigwiglabels
-'$bigwiglabels']]></command>
+--bigwiglabels '$bigwiglabels'
+]]></command>
   <configfiles>
     <configfile name="runme"><![CDATA[#raw
 """
@@ -45,7 +50,9 @@ import numpy as np
 import pybigtools
 import sys
 from pathlib import Path
+
 class findOut():
+
     def __init__(self, args):
         self.bwnames=args.bigwig
         self.bwlabels=args.bigwiglabels
@@ -55,11 +62,12 @@ class findOut():
         self.bedouthilo=args.bedouthilo
         self.bedouthi=args.bedouthi
         self.bedoutlo=args.bedoutlo
-        self.tableout = args.tableout
+        self.tableoutfile = args.tableoutfile
         self.bedwin = args.minwin
         self.qhi = args.qhi
         self.qlo = args.qlo
         self.makeBed()
+
     def processVals(self, bw, isTop):
         # http://gregoryzynda.com/python/numpy/contiguous/interval/2019/11/29/contiguous-regions.html
         if isTop:
@@ -70,6 +78,7 @@ class findOut():
         bwexdnz = bwexd.nonzero()[0]
         bwregions = np.reshape(bwexdnz, (-1,2))
         return bwregions
+
     def writeBed(self, bed, bedfname):
         """
         potentially multiple
@@ -80,12 +89,14 @@ class findOut():
             bedf.write('\n'.join(beds))
             bedf.write('\n')
         print('Wrote %d bed regions to %s' % (len(bed), bedfname))
+
     def makeBed(self):
         bedhi = []
         bedlo = []
         bwlabels = self.bwlabels
         bwnames = self.bwnames
         print('bwnames=', bwnames, "bwlabs=", bwlabels)
+        restab = ["bigwig\tcontig\tn\tmean\tstd\tmin\tmax\tqtop\tqbot"]
         for i, bwname in enumerate(bwnames):
             bwlabel = bwlabels[i].replace(" ",'')
             p = Path('in.bw')
@@ -94,7 +105,6 @@ class findOut():
             chrlist = bwf.chroms()
             chrs = list(chrlist.keys())
             chrs.sort()
-            restab = ["contig\tn\tmean\tstd\tmin\tmax\tqtop\tqbot"]
             for chr in chrs:
                 bw = bwf.values(chr)
                 bw = bw[~np.isnan(bw)] # some have NaN if parts of a contig not covered
@@ -115,11 +125,12 @@ class findOut():
                 bwmax = np.max(bw)
                 nrow = np.size(bw)
                 bwmin = np.min(bw)
-                restab.append('%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f' % (chr,nrow,bwmean,bwstd,bwmin,bwmax,self.bwtop,self.bwbot))        
-        print('\n'.join(restab), '\n')
-        if self.tableout:
-            with open(self.tableout) as t:
-                t.write('\n'.join(restab))
+                restab.append('%s\t%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f' % (bwlabel,chr,nrow,bwmean,bwstd,bwmin,bwmax,self.bwtop,self.bwbot))  
+        stable = '\n'.join(restab)      
+        print(stable)
+        if self.tableoutfile:
+            with open(self.tableoutfile, 'w') as t:
+                t.write(stable)
                 t.write('\n')
         if self.bedoutlo:
             if self.qlo:
@@ -130,7 +141,7 @@ class findOut():
         if self.bedouthilo:
             allbed = bedlo + bedhi
             self.writeBed(allbed, self.bedouthilo)
-        return restab
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     a = parser.add_argument
@@ -142,7 +153,7 @@ if __name__ == "__main__":
     a('-o', '--bedouthilo', default=None, help="optional high and low combined bed")
     a('-u', '--bedouthi', default=None, help="optional high only bed")
     a('-b', '--bedoutlo', default=None, help="optional low only bed")
-    a('-t', '--tableout', default=None)
+    a('-t', '--tableoutfile', default=None)
     args = parser.parse_args()
     print('args=', args)
     if not (args.bedouthilo or args.bedouthi or args.bedoutlo):
@@ -151,11 +162,7 @@ if __name__ == "__main__":
     if not (args.qlo or args.qhi):
         sys.stderr.write("bigwig_outlier_bed.py cannot usefully run - need one or both of quantile cutpoints qhi and qlo")
         sys.exit(2)
-    restab = findOut(args)
-    if args.tableout == "create":
-        with open(args.tableoutfile, 'w') as tout:
-            tout.write('\n'.join(restab))
-            tout.write('\n')
+    findOut(args)
 #end raw]]></configfile>
   </configfiles>
   <inputs>
@@ -195,6 +202,30 @@ if __name__ == "__main__":
       <param name="qhi" value="0.99"/>
       <param name="qlo" value="0.01"/>
       <param name="tableout" value="donotmake"/>
+      <param name="bigwiglabels" value="outbed"/>
+    </test>
+    <test expect_num_outputs="2">
+      <output name="bedouthilo" value="bedouthilo_sample" compare="diff" lines_diff="0"/>
+      <output name="tableoutfile" value="table_sample" compare="diff" lines_diff="0"/>
+      <param name="outhilo" value="true"/>
+      <param name="bigwig" value="bigwig_sample"/>
+      <param name="minwin" value="10"/>
+      <param name="qhi" value="0.99"/>
+      <param name="qlo" value="0.01"/>
+      <param name="tableout" value="create"/>
+      <param name="bigwiglabels" value="outbed"/>
+    </test>
+    <test expect_num_outputs="3">
+      <output name="bedouthilo" value="bedouthilo_sample" compare="diff" lines_diff="0"/>
+      <output name="tableoutfile" value="table_sample" compare="diff" lines_diff="0"/>
+      <output name="bedouthi" value="bedouthi_sample" compare="diff" lines_diff="0"/>
+      <param name="outhilo" value="true"/>
+      <param name="outhi" value="true"/>
+      <param name="bigwig" value="bigwig_sample"/>
+      <param name="minwin" value="10"/>
+      <param name="qhi" value="0.99"/>
+      <param name="qlo" value="0.01"/>
+      <param name="tableout" value="create"/>
       <param name="bigwiglabels" value="outbed"/>
     </test>
   </tests>
