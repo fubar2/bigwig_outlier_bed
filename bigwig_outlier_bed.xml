@@ -1,5 +1,8 @@
 <tool name="bigwig_outlier_bed" id="bigwig_outlier_bed" version="0.01" profile="22.05">
   <description>Writes high and low bigwig runs as features in a bed file</description>
+  <xrefs>
+    <xref type="bio.tools">bigtools</xref>
+  </xrefs>
   <requirements>
     <requirement type="package" version="3.12.3">python</requirement>
     <requirement type="package" version="2.0.0">numpy</requirement>
@@ -241,13 +244,13 @@ if __name__ == "__main__":
     </test>
     <test expect_num_outputs="4">
       <output name="bedouthilo" value="bedouthilo2_sample" compare="diff" lines_diff="0"/>
-      <output name="bedouthilo" value="bedoutlo2_sample" compare="diff" lines_diff="0"/>
+      <output name="bedoutlo" value="bedoutlo2_sample" compare="diff" lines_diff="0"/>
       <output name="bedouthi" value="bedouthi2_sample" compare="diff" lines_diff="0"/>
       <output name="tableoutfile" value="table2_sample" compare="diff" lines_diff="0"/>
       <param name="outhilo" value="true"/>
       <param name="outhi" value="true"/>
       <param name="outlo" value="true"/>
-      <param name="bigwig" value="bigwig_sample,test.bw"/>
+      <param name="bigwig" value="bigwig_sample,1.bigwig"/>
       <param name="minwin" value="10"/>
       <param name="qhi" value="0.99"/>
       <param name="qlo" value="0.01"/>
@@ -258,12 +261,12 @@ if __name__ == "__main__":
   <help><![CDATA[
  **What it Does**
  
- Takes one or more bigwigs mapped to the same reference and finds all the minimum window sized or greater contiguous regions above or below an upper and lower quantile cutoff.
+ Takes one or more bigwigs mapped to the same reference and finds all the minimum window sized or greater continuous regions above or below an upper and lower quantile cutoff.
  A window size of 10 works well, and quantiles set at 0.01 and 0.99 will generally work well.
 
- For JBrowse2 bed tracks, putting both the extreme regions in one bed file is usually best since they can now appear coloured red/blue.
+ For JBrowse2 bed tracks, putting both high and low extreme regions in one bed file is usually best since they can now appear coloured red/blue.
 
- If you only need to see either the consistently high or low regions, use one of those as the output.
+ If you only need to see either the consistently high or low regions, use one of those as the output instead.
 
  At least one bed output must be selected or the tool will fail.
  
