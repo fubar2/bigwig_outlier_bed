@@ -8,27 +8,34 @@
   <version_command><![CDATA[echo "0.01"]]></version_command>
   <command><![CDATA[python
 '$runme'
---bigwig
-'$bigwig'
+--bigwig 
+#for bw in $bigwig: 
+ '$bw' 
+#end for
+--bigwiglabels
+#for bwl in $bigwiglabels.split(','):
+  '$bwl'
+#end for
 #if $outhilo:
-    --bedouthilo '$bedouthilo'
+--bedouthilo '$bedouthilo'
 #end if
 #if $outhi:
-    --bedouthi '$bedouthi'
+--bedouthi '$bedouthi'
 #end if
 #if $outlo:
-    --bedoutlo '$bedoutlo'
+--bedoutlo '$bedoutlo'
 #end if
 --minwin
 '$minwin'
---qhi
-'$qhi'
---qlo
-'$qlo'
+#if $qhi:
+--qhi '$qhi'
+#end if
+#if $qlo:
+--qlo '$qlo'
+#end if
 #if $tableout == "create":
  --tableoutfile '$tableoutfile'
 #end if
---bigwiglabels '$bigwiglabels'
 ]]></command>
   <configfiles>
     <configfile name="runme"><![CDATA[#raw
@@ -47,6 +54,7 @@ Bed interval naming must be short for JB2 but needs input bigwig name and (lo or
 """
 import argparse
 import numpy as np
+import os
 import pybigtools
 import sys
 from pathlib import Path
@@ -99,9 +107,12 @@ class findOut():
         restab = ["bigwig\tcontig\tn\tmean\tstd\tmin\tmax\tqtop\tqbot"]
         for i, bwname in enumerate(bwnames):
             bwlabel = bwlabels[i].replace(" ",'')
-            p = Path('in.bw')
+            fakepath = 'in%d.bw' % i
+            if os.path.isfile(fakepath):
+              os.remove(fakepath)
+            p = Path(fakepath)
             p.symlink_to( bwname ) # required by pybigtools (!)
-            bwf = pybigtools.open('in.bw')
+            bwf = pybigtools.open(fakepath)
             chrlist = bwf.chroms()
             chrs = list(chrlist.keys())
             chrs.sort()
@@ -227,6 +238,21 @@ if __name__ == "__main__":
       <param name="qlo" value="0.01"/>
       <param name="tableout" value="create"/>
       <param name="bigwiglabels" value="outbed"/>
+    </test>
+    <test expect_num_outputs="4">
+      <output name="bedouthilo" value="bedouthilo2_sample" compare="diff" lines_diff="0"/>
+      <output name="bedouthilo" value="bedoutlo2_sample" compare="diff" lines_diff="0"/>
+      <output name="bedouthi" value="bedouthi2_sample" compare="diff" lines_diff="0"/>
+      <output name="tableoutfile" value="table2_sample" compare="diff" lines_diff="0"/>
+      <param name="outhilo" value="true"/>
+      <param name="outhi" value="true"/>
+      <param name="outlo" value="true"/>
+      <param name="bigwig" value="bigwig_sample,test.bw"/>
+      <param name="minwin" value="10"/>
+      <param name="qhi" value="0.99"/>
+      <param name="qlo" value="0.01"/>
+      <param name="tableout" value="create"/>
+      <param name="bigwiglabels" value="merlin,hg002test"/>
     </test>
   </tests>
   <help><![CDATA[
