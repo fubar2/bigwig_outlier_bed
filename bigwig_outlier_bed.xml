@@ -84,7 +84,7 @@
     <data name="bedoutlo" format="bed" label="Low bed" hidden="false">
       <filter>outbeds in ["outall", "outlohi", "outlo"]</filter>
     </data>
-    <data name="tableoutfile" format="tabular" label="Contig statistics" hidden="false">
+    <data name="tableoutfile" format="txt" label="Contig statistics" hidden="false">
       <filter>tableout == "create"</filter>
     </data>
   </outputs>

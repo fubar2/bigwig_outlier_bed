@@ -190,6 +190,7 @@ class findOut:
         restab = []
         bwlabels = self.bwlabels
         bwnames = self.bwnames
+        bwnames.sort()
         reshead =  "bigwig\tcontig\tn\tmean\tstd\tmin\tmax\tqtop\tqbot"
         for i, bwname in enumerate(bwnames):
             bwlabel = bwlabels[i].replace(" ", "")
