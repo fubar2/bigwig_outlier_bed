@@ -214,9 +214,9 @@ class findOut:
                     first_few = ['%.2f\t%d' % (values[x],counts[x]) for x in range(10)]
                     first_few += ['%.2f\t%d' % (values[x],counts[x]) for x in last10]
                     first_few.insert(0,'First/Last 10 value counts\nValue\tCount')
-                    ha = asciihist(data=bw, bins=20, str_tag=chr)
+                    ha = asciihist(data=bw, bins=20, str_tag='%s_%s' % (bwlabel,chr))
                     histo = ha.draw()
-                    histo = '\n'.join(first_few) + '\nHistogram of bigwig values\n' + histo
+                    histo = '\n'.join(first_few) + '\nHistogram of %s bigwig values\n' % bwlabel + histo
                 bw = bw[~np.isnan(bw)]  # some have NaN if parts of a contig not covered
                 if self.qhi is not None:
                     self.bwtop = np.quantile(bw, self.qhi)

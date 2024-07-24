@@ -58,10 +58,12 @@
     <param name="bigwig" type="data" optional="false" label="Choose one or more bigwig file(s) to return outlier regions as a bed file" 
       help="If more than one, MUST all use the same reference sequence to be displayable. Feature names will include the bigwig label." format="bigwig" multiple="true"/>
     <param name="minwin" type="integer" value="10" label="Minimum continuous bases to count as a high or low bed feature" 
-      help="Continuous features as long or longer than this window size will appear as bed features"/>
-    <param name="qhi" type="float" value="0.99" label="Quantile cutoff for a high region - 0.99 will cut off at or above the 99th percentile" help="Required" optional="false"/>
-    <param name="qlo" type="float" value="0.01" label="Quantile cutoff for a low region - 0.01 will cut off at or below the 1st percentile." help="Optional" optional="true"/>
-    <param name="outbeds" type="select" label="Select the required bed file outputs" help="Any combination of the 3 different kinds of bed file output can be made">
+      help="Minimum continuous length to count as a bed feature. If windowed bigwig, must be bigger than window size to have any effect"/>
+    <param name="qhi" type="float" value="0.99999" label="Quantile cutoff for a high region - 0.99999 will cut off at about 1 in 100,000" 
+       help="1 per 100k might be a few thousand features in a 200M chromosome - depends on the distribution - see the table output" optional="false"/>
+    <param name="qlo" type="float" value="0.00001" label="Quantile cutoff for a low region - 0.01 will cut off at or below the 1st percentile." help="Optional" optional="true"/>
+    <param name="outbeds" type="select" label="Select the required bed file outputs or none for a bigwig value distribution report" 
+      help="Any combination of the 3 different kinds of bed file output can be made">
       <option value="outhilo" selected="true">Make 1 bed output with both low and high regions</option>
       <option value="outhi">Make 1 bed output with high regions only</option>
       <option value="outlo">Make 1 bed output with low regions only</option>
@@ -75,17 +77,17 @@
     </param>
   </inputs>
   <outputs>
-    <data name="bedouthilo" format="bed" label="High_and_low_bed" hidden="false">
+    <data name="bedouthilo" format="bed" label="High_and_low_bed">
       <filter>outbeds in ["outall", "outhilo"]</filter>
     </data>
-    <data name="bedouthi" format="bed" label="High bed" hidden="false">
+    <data name="bedouthi" format="bed" label="High bed">
       <filter>outbeds in ["outall", "outlohi", "outhi"]</filter>
     </data>
-    <data name="bedoutlo" format="bed" label="Low bed" hidden="false">
+    <data name="bedoutlo" format="bed" label="Low bed">
       <filter>outbeds in ["outall", "outlohi", "outlo"]</filter>
     </data>
-    <data name="tableoutfile" format="txt" label="Contig statistics" hidden="false">
-      <filter>tableout == "create"</filter>
+    <data name="tableoutfile" format="txt" label="Contig statistics">
+      <filter>tableout == "create" or outbeds == "outtab"</filter>
     </data>
   </outputs>
   <tests>
